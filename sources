@@ -1,0 +1,13 @@
+TARGETNAME=Driver
+TARGETTYPE=DRIVER
+#DRIVERTYPE=WDM
+TARGETPATH=obj
+SOURCES=init.c \
+	proc.c \
+	file.c \
+	key.c \
+	net.c \
+	keyboard.c
+
+# TARGETLIBS=
+# INCLUDE=
