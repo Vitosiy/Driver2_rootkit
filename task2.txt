@@ -1,6 +1,6 @@
 16.11.2020
 
-.kdfiles -m \??\C:\Documents\root\Desktop\Driver2\Driver.sys C:\Users\Vitaliy\Desktop\Univer\Sysprog\sysprog2\rootkit_driver-master\objchk\i386\Driver.sys
+.kdfiles -m \??\C:\Documents\root\Desktop\Driver2\Driver.sys C:\Users\Vitaliy\Desktop\Univer\Sysprog\sysprog2\rootkit_driver-master\objchk_wxp_x86\i386\Driver.sys
 
 Задание
 
@@ -37,7 +37,7 @@ b=13
 Способы перехвата:	
 # 	0) Подмена адреса в таблице системных вызовов.
 **	1) Сплайсинг системного вызова.
-1. Модификация списка сетевых соединений, возвращаемого сетевым драйвером через системный вызов ZwDeviceIoControlFile.
++1. Модификация списка сетевых соединений, возвращаемого сетевым драйвером через системный вызов ZwDeviceIoControlFile.
 Задачи:
 #	0) Скрыть сетевое соединение (по номеру локального порта, по номеру удаленного порта, по номерам локального и удаленного портов).
 	1) Добавить в список сетевое соединение с указанными пользователем данными.

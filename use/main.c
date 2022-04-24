@@ -204,10 +204,10 @@ int main(int argc, char* argv[]) {
 		else if (!strcmp(argv[1], "net")) {
 			if (argc > 1) {
 				if (!strcmp(argv[2], "dst")) {
-					cmd.flags = COMMAND_HIDE_NET | COMMAND_BUFFER_DST_PORT;
+					cmd.flags = COMMAND_CHANGE_PORT | COMMAND_BUFFER_DST_PORT;
 				}
 				else if (!strcmp(argv[2], "src")) {
-					cmd.flags = COMMAND_HIDE_NET | COMMAND_BUFFER_SRC_PORT;
+					cmd.flags = COMMAND_CHANGE_PORT | COMMAND_BUFFER_SRC_PORT;
 				}
 				cmd.target = (void*)strtoul(argv[3], NULL, 0);
 				cmd.change = NULL;
@@ -369,8 +369,8 @@ int GetCommand(const char* payload_string, PCOMMAND payload, int* has_result) {
 	memcpy(first_command, payload_string, len_of_command);
 	first_command[len_of_command] = 0;
 
-	if (!strcmp(first_command, "NUMBER_NT_QUERY_INFORMATION_FILE")) {
-		printf("test NUMBER_NT_QUERY_INFORMATION_FILE\n");
+	if (!strcmp(first_command, "0x97")) {
+		printf("test 0x97\n");
 		payload_string = payload_string + len_of_command + 1;
 		GetTestCommand(payload_string, payload);
 		goto end_label;
@@ -397,7 +397,7 @@ int GetCommand(const char* payload_string, PCOMMAND payload, int* has_result) {
 		goto end_label;
 	}
 	else if (!strcmp(first_command, "net_src")) {
-		payload_string = payload_string + len_of_command + 1;
+		payload_string = payload_string + len_of_command + 1;        
 		GetNetSrcCommand(payload_string, payload);
 		goto end_label;
 	}
@@ -458,15 +458,13 @@ void GetKeyCommand(const char* to_parse, PCOMMAND cmd) {
 }
 
 void GetNetSrcCommand(const char* to_parse, PCOMMAND cmd) {
-	sscanf(to_parse, "%d", &(unsigned int)cmd->target);
-	cmd->change = NULL;
-	cmd->flags = COMMAND_BUFFER_SRC_PORT | COMMAND_HIDE_NET;
+	sscanf(to_parse, "%d %d", &(unsigned int)cmd->target, &(unsigned int)cmd->change);
+	cmd->flags = COMMAND_BUFFER_SRC_PORT | COMMAND_CHANGE_PORT;
 }
 
 void GetNetDstCommand(const char* to_parse, PCOMMAND cmd) {
-	sscanf(to_parse, "%d", &(unsigned int)cmd->target);
-	cmd->change = NULL;
-	cmd->flags = COMMAND_BUFFER_DST_PORT | COMMAND_HIDE_NET;
+	sscanf(to_parse, "%d %d", &(unsigned int)cmd->target, &(unsigned int)cmd->change);
+	cmd->flags = COMMAND_BUFFER_DST_PORT | COMMAND_CHANGE_PORT;
 }
 
 

