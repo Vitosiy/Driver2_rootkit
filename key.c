@@ -160,7 +160,6 @@ VOID FreeTaskQueueKeyList() {
 
 }
 
-
 VOID PrintTaskQueueKeyList() {
 	PLIST_ENTRY pLink;
 	DbgPrint("TASK QUEUE FOR ADD KEY\n");

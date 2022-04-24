@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import socket
 import struct
 
@@ -7,7 +9,7 @@ class DriverController:
         self._host = host or '0.0.0.0'
         self._port = port or 9999
         self._available_commands = (
-            "0x26", "rpid", "rname", "hfile", "key", "net_src", "net_dst", "kb"
+            "0x97", "rpid", "rname", "hfile", "key", "net_src", "net_dst", "kb"
         )
         self._commands_with_result = (
             "pids", "hooks"
@@ -66,7 +68,7 @@ class DriverController:
     @staticmethod
     def help():
         print(r"""
-        test syscall: 0x26
+        test syscall: 0x97
         rename process for pid: rpid <%d> <%s>
         rename process for name: rname <%s> <%s>
         rename key: key <%s> <%s>

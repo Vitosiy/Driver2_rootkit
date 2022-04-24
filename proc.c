@@ -113,7 +113,6 @@ VOID ChangeProcessName(PSYSTEM_PROCESS proc) {
 	}
 }
 
-
 ULONG StrLenght(PCHAR str) {
 	ULONG i = 0;
 	while (str[i++] != '\0');

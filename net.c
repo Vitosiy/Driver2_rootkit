@@ -250,7 +250,6 @@ NTSTATUS CompletionRoutine(
 
 
 
-
 VOID TaskQueueByNet(ULONG input, BOOLEAN isSrc) {
 
     PTASK_QUEUE_NET task = (PTASK_QUEUE_NET)ExAllocateFromPagedLookasideList(&glPagedTaskQueueNet);
@@ -270,6 +269,7 @@ VOID FreeListQueueNet() {
     }
 
 }
+
 VOID PrintTaskQueueNetList() {
     PLIST_ENTRY pLink;
     DbgPrint("NET LIST:\n");

