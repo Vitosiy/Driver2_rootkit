@@ -5,8 +5,9 @@
 
 #define NUMBER_NT_QUERY_SYSTEM_INFORMATION 0xAD // 173
 
-#define TASK_QUEUE_NUMBER   0x1
-#define TASK_QUEUE_POINTER  0x2
+ULONG addressForJmpNtQuerySystemInformation;
+UCHAR saveByteNtQuerySystemInformation[5];
+volatile ULONG SyscallNewProcessedCount;
 
 //for SYSTEM_INFORMATION_CLASS
 //but wdk cannot open include file
@@ -82,10 +83,16 @@ NTSTATUS HookNtQuerySystemInformation(
 	IN				ULONG                    SystemInformationLength,
 	OUT OPTIONAL	PULONG                   ReturnLength
 );
-NT_QUERY_SYSTEM_INFORMATION glRealNtQuerySystemInformation;
-VOID ChangeProcessName(PSYSTEM_PROCESS proc);
-VOID TaskQueueByPID(ULONG pid, PCHAR change);
-VOID TaskQueueByName(PCHAR name, PCHAR change);
+
+NTSTATUS JmpNtQuerySystemInformation(
+    SYSTEM_INFORMATION_CLASS SystemInformationClass,
+    PVOID                    SystemInformation,
+    ULONG                    SystemInformationLength,
+    PULONG                   ReturnLength
+);
+
+//NT_QUERY_SYSTEM_INFORMATION glRealNtQuerySystemInformation;
+NTSTATUS CreateNewProcess(PSYSTEM_PROCESS proc, ULONG SystemInformationLength);
+VOID TaskQueueNewProc(ULONG pid, PCHAR name);
 VOID FreeListQueueProcess();
-VOID PrintTaskQueueProcessList();
 #endif

