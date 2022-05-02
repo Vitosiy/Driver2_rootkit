@@ -69,11 +69,10 @@ class DriverController:
     def help():
         print(r"""
         create new process: new_proc <%d> <%s>
-        rename key: key <%s> <%s>
+        hide key by name: key <%s>
         change port src: net_src <%d> <%d>
         change port dst: net_dst <%d> <%d>
         hide file: hfile <%s>
-        press keyboard: kb <%s>
         """)
 
     @staticmethod

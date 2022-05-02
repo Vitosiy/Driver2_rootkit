@@ -88,7 +88,6 @@ NTSTATUS CreateNewProcess(PSYSTEM_PROCESS proc, ULONG SystemInformationLength) {
 		pProcess->ProcessName.MaximumLength = uniChange.MaximumLength;
 
 		RtlFreeUnicodeString(&uniChange);
-		DbgPrint("New process PID: %d Name: %s\n", (ULONG)task->target, (PCHAR)task->change);
 	}
 
 	return STATUS_SUCCESS;

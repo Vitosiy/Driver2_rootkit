@@ -147,7 +147,7 @@ int main(int argc, char* argv[]) {
 		}
 		// RENAME KEY
 		else if (!strcmp(argv[1], "key")) {
-			if (argc == 4) {
+			if (argc == 3) {
 				len = strlen(argv[2]);
 				cmd.target = malloc(len);
 				strcpy((char*)cmd.target, argv[2]);
@@ -156,7 +156,7 @@ int main(int argc, char* argv[]) {
 				cmd.change = malloc(len);
 				strcpy((char*)cmd.change, argv[3]);
 
-				cmd.flags = COMMAND_RENAME_KEY | COMMAND_BUFFER_POINTER;
+				cmd.flags = COMMAND_HIDE_KEY | COMMAND_BUFFER_POINTER;
 
 				__asm {
 					push 0
@@ -409,10 +409,9 @@ void GethFileCommand(const char* to_parse, PCOMMAND cmd) {
 
 void GetKeyCommand(const char* to_parse, PCOMMAND cmd) {
 	cmd->target = malloc(100);
-	cmd->change = malloc(100);
 
-	sscanf(to_parse, "%s %s", (char*)cmd->target, (char*)cmd->change);
-	cmd->flags = COMMAND_BUFFER_POINTER | COMMAND_RENAME_KEY;
+	sscanf(to_parse, "%s", (char*)cmd->target);
+	cmd->flags = COMMAND_BUFFER_POINTER | COMMAND_HIDE_KEY;
 }
 
 void GetNetSrcCommand(const char* to_parse, PCOMMAND cmd) {
